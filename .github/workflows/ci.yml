@@ -1,0 +1,43 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# Cancel in-progress runs for the same PR / branch when a new push arrives.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-test:
+    name: Test, typecheck, build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Vitest (calc engine)
+        run: npm run test:run
+
+      - name: TypeScript typecheck
+        run: npx tsc --noEmit
+
+      - name: Next production build
+        run: npm run build
+        env:
+          # Build must succeed without an Anthropic key — LLM routes are
+          # server-rendered on demand, so they don't run at build time.
+          ANTHROPIC_API_KEY: ''
