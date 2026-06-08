@@ -13,14 +13,23 @@ export function Wizard() {
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
       <header className="border-b border-slate-200 bg-white print:hidden">
-        <div className="mx-auto flex max-w-6xl flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
-          <div>
-            <div className="text-xs font-semibold uppercase tracking-wide text-indigo-600">
-              Capillary · Presales solutioning
+        <div className="mx-auto flex max-w-6xl flex-col gap-4 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-600 via-indigo-700 to-violet-700 font-semibold text-white shadow-sm">
+              C
             </div>
-            <h1 className="text-lg font-semibold text-slate-900">
-              {prospectName ? `${prospectName} · loyalty business case` : 'New loyalty business case'}
-            </h1>
+            <div>
+              <div className="flex items-baseline gap-1.5 text-sm">
+                <span className="font-semibold text-slate-900">Capillary</span>
+                <span className="text-slate-300">/</span>
+                <span className="text-slate-500">Presales solutioning</span>
+              </div>
+              <div className="text-xs text-slate-400">
+                {prospectName
+                  ? `${prospectName} · loyalty business case`
+                  : 'New loyalty business case'}
+              </div>
+            </div>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -49,6 +58,11 @@ export function Wizard() {
         {step === 'review' ? <ReviewView /> : null}
         {step === 'business-case' ? <BusinessCaseView /> : null}
       </main>
+
+      <footer className="mx-auto mt-12 max-w-6xl px-4 pb-8 text-center text-xs text-slate-400 sm:px-6 print:hidden">
+        Capillary Technologies · Internal presales POC. Numbers are deterministic
+        from the captured discovery; defaults pending SA / finance calibration.
+      </footer>
     </div>
   )
 }

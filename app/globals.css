@@ -20,10 +20,36 @@ body {
 }
 
 @media print {
+  @page {
+    size: A4;
+    margin: 14mm 12mm;
+  }
   body {
     background: #ffffff;
+    color: #0f172a;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
   }
   .print\:hidden {
     display: none !important;
+  }
+  /* Avoid awkward page breaks inside cards / tables. */
+  section,
+  table,
+  tr {
+    break-inside: avoid;
+  }
+  /* Tables look tighter on paper. */
+  table {
+    font-size: 11px !important;
+  }
+  /* Drop shadows / heavy borders so the page reads like a deliverable. */
+  .shadow-sm,
+  .shadow-md,
+  .shadow-lg {
+    box-shadow: none !important;
+  }
+  main {
+    padding: 0 !important;
   }
 }

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { Metric } from '@/lib/types/metric'
 import { formatMetric, formatPercentSigned, formatCurrencySigned } from '@/lib/format'
 import { isComputed } from '@/lib/calc/util'
@@ -36,6 +36,21 @@ export function MetricCell({
   size = 'md',
 }: Props) {
   const [open, setOpen] = useState(false)
+  const wrapperRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!open) return
+    const onDown = (e: MouseEvent) => {
+      if (
+        wrapperRef.current &&
+        !wrapperRef.current.contains(e.target as Node)
+      ) {
+        setOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', onDown)
+    return () => document.removeEventListener('mousedown', onDown)
+  }, [open])
 
   let display: string
   if (!isComputed(metric)) {
@@ -58,7 +73,7 @@ export function MetricCell({
         : 'text-slate-900'
 
   return (
-    <div className="relative inline-block">
+    <div ref={wrapperRef} className="relative inline-block">
       {label ? (
         <div className="text-xs uppercase tracking-wide text-slate-500 mb-1">
           {label}
@@ -67,7 +82,6 @@ export function MetricCell({
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        onBlur={() => setOpen(false)}
         className={`inline-flex items-baseline gap-1 ${SIZE_CLASSES[size]} ${valueColor} hover:text-slate-700`}
         title="Click to show the working"
       >

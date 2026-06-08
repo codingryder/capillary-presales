@@ -93,30 +93,34 @@ export function BusinessCaseView() {
         </div>
       ) : null}
 
-      <section className="rounded-xl border border-slate-200 bg-white p-8 shadow-sm print:shadow-none print:border-0">
-        <div className="mb-6">
-          <div className="text-xs font-semibold uppercase tracking-wide text-indigo-600">
+      <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm print:shadow-none print:border-0">
+        <div className="bg-gradient-to-br from-indigo-700 via-indigo-700 to-violet-700 px-8 py-8 text-white print:bg-none print:bg-white print:text-slate-900 print:border-b print:border-slate-200">
+          <div className="text-xs font-semibold uppercase tracking-wider text-indigo-100 print:text-indigo-700">
             Loyalty business case · prepared for
           </div>
-          <h3 className="mt-1 text-2xl font-semibold text-slate-900">
+          <h3 className="mt-2 text-3xl font-bold leading-tight sm:text-4xl">
             {prospectName}
           </h3>
           {discovery.prospect?.industry || discovery.prospect?.region ? (
-            <div className="mt-1 text-sm text-slate-500">
+            <div className="mt-1 text-sm text-indigo-100 print:text-slate-500">
               {[discovery.prospect?.industry, discovery.prospect?.region]
                 .filter(Boolean)
                 .join(' · ')}
             </div>
           ) : null}
+          <div className="mt-3 text-xs text-indigo-200 print:text-slate-400">
+            Capillary Technologies · Internal draft for SA review
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-          <HeadlineCard
-            label="Annual incremental margin"
-            metric={bc.headline.annualUplift}
-            currency={currency}
-            tone="positive"
-          />
+        <div className="grid grid-cols-1 gap-4 p-6 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="lg:col-span-2">
+            <PrimaryHeadlineCard
+              label="Annual incremental margin"
+              metric={bc.headline.annualUplift}
+              currency={currency}
+            />
+          </div>
           <HeadlineCard
             label="3-year net value"
             metric={bc.headline.threeYearNetValue}
@@ -403,7 +407,28 @@ function HeadlineCard({
       : 'border-slate-200 bg-slate-50'
   return (
     <div className={`rounded-lg border ${accent} p-5`}>
+      <MetricCell metric={metric} currency={currency} label={label} size="lg" compact />
+    </div>
+  )
+}
+
+function PrimaryHeadlineCard({
+  label,
+  metric,
+  currency,
+}: {
+  label: string
+  metric: import('@/lib/types/metric').Metric
+  currency: string
+}) {
+  return (
+    <div className="relative h-full overflow-hidden rounded-lg border-2 border-indigo-300 bg-gradient-to-br from-indigo-50 via-white to-white p-6 shadow-sm">
+      <div className="absolute right-0 top-0 h-full w-1.5 bg-indigo-600"></div>
       <MetricCell metric={metric} currency={currency} label={label} size="xl" compact />
+      <p className="mt-3 text-xs text-slate-500">
+        Annual run-rate uplift: Δ gross margin minus Δ program cost (reward +
+        redemption + Capillary platform).
+      </p>
     </div>
   )
 }
