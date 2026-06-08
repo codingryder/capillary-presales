@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import type { Metric } from '@/lib/types/metric'
 import { formatMetric, formatPercentSigned, formatCurrencySigned } from '@/lib/format'
 import { isComputed } from '@/lib/calc/util'
@@ -23,9 +23,17 @@ const SIZE_CLASSES: Record<NonNullable<Props['size']>, string> = {
   xl: 'text-4xl font-semibold tracking-tight',
 }
 
+const POPOVER_WIDTH = 320
+const POPOVER_MARGIN = 8
+
 /**
  * Renders a Metric's value with a click affordance to "show the working":
- * formula, inputs, and notes. The popover is non-modal and keyboard-accessible.
+ * formula, inputs, and notes.
+ *
+ * The popover uses `position: fixed` with viewport-aware coords so it escapes
+ * ancestor `overflow: hidden` (we have it on the review/business-case tables to
+ * round corners) and flips horizontally when there isn't room to the right of
+ * the trigger.
  */
 export function MetricCell({
   metric,
@@ -36,20 +44,68 @@ export function MetricCell({
   size = 'md',
 }: Props) {
   const [open, setOpen] = useState(false)
-  const wrapperRef = useRef<HTMLDivElement>(null)
+  const [popoverStyle, setPopoverStyle] = useState<CSSProperties>({})
+
+  const triggerRef = useRef<HTMLButtonElement>(null)
+  const popoverRef = useRef<HTMLDivElement>(null)
+
+  const positionPopover = () => {
+    const trigger = triggerRef.current
+    if (!trigger) return
+    const rect = trigger.getBoundingClientRect()
+    const viewportW = window.innerWidth
+    const viewportH = window.innerHeight
+
+    let left = rect.left
+    if (left + POPOVER_WIDTH > viewportW - POPOVER_MARGIN) {
+      left = Math.max(POPOVER_MARGIN, rect.right - POPOVER_WIDTH)
+    }
+
+    let top: number = rect.bottom + POPOVER_MARGIN
+    const popoverEl = popoverRef.current
+    const popoverH = popoverEl?.offsetHeight ?? 0
+    if (popoverH > 0 && top + popoverH > viewportH - POPOVER_MARGIN) {
+      // Flip above if it would otherwise spill off the bottom.
+      top = Math.max(POPOVER_MARGIN, rect.top - POPOVER_MARGIN - popoverH)
+    }
+
+    setPopoverStyle({
+      position: 'fixed',
+      top,
+      left,
+      width: POPOVER_WIDTH,
+      zIndex: 50,
+    })
+  }
 
   useEffect(() => {
     if (!open) return
+    positionPopover()
+    // Re-position after the popover renders and has a real offsetHeight, so
+    // the vertical-flip branch above sees the actual height.
+    const raf = requestAnimationFrame(positionPopover)
+
     const onDown = (e: MouseEvent) => {
+      const t = e.target as Node
       if (
-        wrapperRef.current &&
-        !wrapperRef.current.contains(e.target as Node)
+        triggerRef.current?.contains(t) ||
+        popoverRef.current?.contains(t)
       ) {
-        setOpen(false)
+        return
       }
+      setOpen(false)
     }
+    const onReposition = () => positionPopover()
+
     document.addEventListener('mousedown', onDown)
-    return () => document.removeEventListener('mousedown', onDown)
+    window.addEventListener('scroll', onReposition, true)
+    window.addEventListener('resize', onReposition)
+    return () => {
+      cancelAnimationFrame(raf)
+      document.removeEventListener('mousedown', onDown)
+      window.removeEventListener('scroll', onReposition, true)
+      window.removeEventListener('resize', onReposition)
+    }
   }, [open])
 
   let display: string
@@ -73,25 +129,29 @@ export function MetricCell({
         : 'text-slate-900'
 
   return (
-    <div ref={wrapperRef} className="relative inline-block">
+    <div className="inline-block">
       {label ? (
         <div className="text-xs uppercase tracking-wide text-slate-500 mb-1">
           {label}
         </div>
       ) : null}
       <button
+        ref={triggerRef}
         type="button"
         onClick={() => setOpen((v) => !v)}
         className={`inline-flex items-baseline gap-1 ${SIZE_CLASSES[size]} ${valueColor} hover:text-slate-700`}
         title="Click to show the working"
+        aria-expanded={open}
       >
         <span>{display}</span>
         <span className="text-xs font-normal text-slate-400">ⓘ</span>
       </button>
       {open ? (
         <div
+          ref={popoverRef}
           role="dialog"
-          className="absolute z-20 left-0 top-full mt-2 w-80 max-w-[90vw] rounded-lg border border-slate-200 bg-white p-3 text-xs shadow-lg text-left"
+          style={popoverStyle}
+          className="rounded-lg border border-slate-200 bg-white p-3 text-xs shadow-lg text-left print:hidden"
         >
           <div className="font-mono font-medium text-slate-800 break-words">
             {metric.formula}
