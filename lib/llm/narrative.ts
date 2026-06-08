@@ -1,4 +1,4 @@
-import Anthropic from '@anthropic-ai/sdk'
+import { GoogleGenAI } from '@google/genai'
 import type { BusinessCase } from '@/lib/types/business-case'
 import type {
   CapabilitySelection,
@@ -10,7 +10,7 @@ import { buildBusinessCase } from '@/lib/calc/business-case'
 import { CAPABILITY_BY_ID } from '@/lib/capabilities/catalog'
 import { deriveAssumptions } from '@/lib/capabilities/derive'
 
-const DEFAULT_MODEL = 'claude-sonnet-4-6'
+const DEFAULT_MODEL = 'gemini-2.5-flash'
 
 export const NARRATIVE_SYSTEM_PROMPT = `You are writing the executive-summary section of a loyalty business case prepared by Capillary Technologies (an enterprise loyalty platform) for a prospect.
 
@@ -21,7 +21,7 @@ Hard rules — these are non-negotiable:
 2. If a number is missing (null) from the payload, do not estimate. Acknowledge uncertainty in plain language or omit that point.
 3. Format currency exactly as it appears in the payload's "displayValue" strings — do not change locale, scale, or precision.
 4. Tone: executive, calm, specific. No marketing language. No superlatives ("unprecedented", "game-changing", "industry-leading"). No exclamation marks. No hype.
-5. Output plain prose only — no markdown headings, no bullet lists, no numbered lists.
+5. Output plain prose only — no markdown headings, no bullet lists, no numbered lists, no preamble like "Here is the executive summary:". Start directly with the first paragraph.
 6. Length: 2–3 short paragraphs, roughly 120–200 words total.
 
 Structure:
@@ -152,13 +152,14 @@ export async function generateNarrative(args: {
   annualPlatformCost: number
   oneTimeImplementationCost: number
 }): Promise<NarrativeResult> {
-  if (!process.env.ANTHROPIC_API_KEY) {
+  const apiKey = process.env.GEMINI_API_KEY
+  if (!apiKey) {
     throw new Error(
-      'ANTHROPIC_API_KEY is not configured. Add it to .env.local and restart the dev server.',
+      'GEMINI_API_KEY is not configured. Set it in .env.local (local dev) or in your Vercel project Environment Variables (production), then restart / redeploy.',
     )
   }
-  const model = process.env.ANTHROPIC_MODEL ?? DEFAULT_MODEL
-  const client = new Anthropic()
+  const model = process.env.GEMINI_MODEL ?? DEFAULT_MODEL
+  const ai = new GoogleGenAI({ apiKey })
 
   const derived = deriveAssumptions({
     selection: args.capabilitySelection,
@@ -169,27 +170,19 @@ export async function generateNarrative(args: {
   const payload = toLLMPayload(bc, derived)
   const payloadJson = JSON.stringify(payload, null, 2)
 
-  const response = await client.messages.create({
+  const response = await ai.models.generateContent({
     model,
-    max_tokens: 1024,
-    system: NARRATIVE_SYSTEM_PROMPT,
-    messages: [
-      {
-        role: 'user',
-        content:
-          `BUSINESS CASE PAYLOAD — the numbers below are fixed and authoritative. Quote the "displayValue" strings verbatim:\n\n` +
-          payloadJson +
-          `\n\nNow write the executive summary, following all rules in the system prompt.`,
-      },
-    ],
+    contents:
+      `BUSINESS CASE PAYLOAD — the numbers below are fixed and authoritative. Quote the "displayValue" strings verbatim:\n\n` +
+      payloadJson +
+      `\n\nNow write the executive summary, following all rules in the system prompt.`,
+    config: {
+      systemInstruction: NARRATIVE_SYSTEM_PROMPT,
+      temperature: 0.4,
+    },
   })
 
-  const narrative = response.content
-    .filter((b) => b.type === 'text')
-    .map((b) => (b.type === 'text' ? b.text : ''))
-    .join('\n')
-    .trim()
-
+  const narrative = (response.text ?? '').trim()
   if (!narrative) {
     throw new Error('Model returned an empty narrative.')
   }

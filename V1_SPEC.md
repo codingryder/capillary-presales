@@ -36,11 +36,14 @@ generated from structured discovery inputs. Built to win an internal sponsor.
 - Every function returns enough metadata to render "show the working".
 
 ## LLM usage (strictly bounded)
-- **Extraction**: prompt returns ONLY structured JSON matching `DiscoveryInput`; parse
-  defensively, strip code fences, validate against the type, surface low-confidence
-  fields for SA review. Never auto-trust extracted numbers.
-- **Narrative**: input is the already-computed `BusinessCase` numbers; output is prose.
-  System prompt must forbid introducing or altering any figure.
+Implemented via `@google/genai` against Gemini 2.5 Flash (override via `GEMINI_MODEL`).
+- **Extraction**: Gemini structured-output mode (`responseMimeType: 'application/json'`
+  + `responseSchema`) — forces JSON matching `DiscoveryInput`'s shape, no code fences
+  to strip. Validate field-by-field, surface what was extracted for SA review.
+  Never auto-trust extracted numbers.
+- **Narrative**: input is the already-computed `BusinessCase` numbers (with each
+  figure pre-formatted into a `displayValue` string the model must quote verbatim);
+  output is plain prose. System prompt forbids introducing or altering any figure.
 
 ## UI
 - Three views: Discovery → Review/Model → Business Case.
@@ -49,7 +52,7 @@ generated from structured discovery inputs. Built to win an internal sponsor.
   thesis is proven.
 
 ## Suggested build order for the Claude Code session
-1. Scaffold Next.js + TS + Tailwind, env setup for the Anthropic key.
+1. Scaffold Next.js + TS + Tailwind, env setup for the Gemini key.
 2. Define the types (`DiscoveryInput`, `EconomicsResult`, `Assumptions`, `BusinessCase`).
 3. Build the calc engine + its tests FIRST, before any UI. Get the math right and proven.
 4. Build the structured discovery form bound to the types.

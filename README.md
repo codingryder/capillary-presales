@@ -16,7 +16,7 @@ One demoable, credible buyer-facing artifact. See `CLAUDE.md` and `V1_SPEC.md`.
 ## Stack
 
 - Next.js 14 (App Router) + TypeScript + Tailwind
-- `@anthropic-ai/sdk` for extraction + narrative
+- `@google/genai` (Gemini 2.5 Flash) for extraction + narrative
 - Vitest for the calc-engine test suite
 - In-memory state for v1 (no DB)
 
@@ -24,11 +24,13 @@ One demoable, credible buyer-facing artifact. See `CLAUDE.md` and `V1_SPEC.md`.
 
 ```sh
 npm install
-cp .env.local.example .env.local   # fill in ANTHROPIC_API_KEY
+cp .env.local.example .env.local   # fill in GEMINI_API_KEY
 npm run dev                        # Next.js dev server
 npm test                           # Vitest in watch mode
 npm run test:run                   # one-shot test run
 ```
+
+Get a Google AI Studio API key at https://aistudio.google.com/apikey.
 
 ## Project layout
 

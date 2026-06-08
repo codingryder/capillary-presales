@@ -49,7 +49,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(result)
   } catch (e) {
     const message = e instanceof Error ? e.message : 'Unknown narrative error'
-    const isConfig = message.includes('ANTHROPIC_API_KEY')
+    const isConfig = message.includes('GEMINI_API_KEY')
     return NextResponse.json({ error: message }, { status: isConfig ? 503 : 500 })
   }
 }

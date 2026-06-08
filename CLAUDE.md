@@ -28,7 +28,7 @@ and credibility of output, not for production hardening or scale.
 
 ## Stack
 - Next.js 14 (App Router) + TypeScript + Tailwind CSS — single app, no separate backend
-- `@anthropic-ai/sdk` for extraction + narrative generation (model: a current Claude model)
+- `@google/genai` for extraction + narrative generation. Default model: `gemini-2.5-flash` (override via `GEMINI_MODEL` env var). Originally spec'd Anthropic; switched to Gemini on 2026-06-09 to align with the user's existing Gemini-based tooling.
 - Supabase optional, only if saving deals between sessions is wanted; in-memory is fine for v1
 - API key via env var only — never hard-coded, never committed
 

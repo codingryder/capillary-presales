@@ -1,6 +1,6 @@
-import Anthropic from '@anthropic-ai/sdk'
+import { GoogleGenAI } from '@google/genai'
 import type { DiscoveryInput } from '@/lib/types/discovery'
-import { DISCOVERY_TOOL, EXTRACTION_SYSTEM_PROMPT } from './schema'
+import { DISCOVERY_SCHEMA, EXTRACTION_SYSTEM_PROMPT } from './schema'
 
 export type ExtractResult = {
   discovery: Partial<DiscoveryInput>
@@ -8,7 +8,7 @@ export type ExtractResult = {
   model: string
 }
 
-const DEFAULT_MODEL = 'claude-sonnet-4-6'
+const DEFAULT_MODEL = 'gemini-2.5-flash'
 
 function flattenFilledKeys(
   obj: Record<string, unknown>,
@@ -62,30 +62,42 @@ function clean(input: Partial<DiscoveryInput>): Partial<DiscoveryInput> {
 export async function extractDiscoveryFromNotes(
   notes: string,
 ): Promise<ExtractResult> {
-  if (!process.env.ANTHROPIC_API_KEY) {
+  const apiKey = process.env.GEMINI_API_KEY
+  if (!apiKey) {
     throw new Error(
-      'ANTHROPIC_API_KEY is not configured. Add it to .env.local and restart the dev server.',
+      'GEMINI_API_KEY is not configured. Set it in .env.local (local dev) or in your Vercel project Environment Variables (production), then restart / redeploy.',
     )
   }
 
-  const model = process.env.ANTHROPIC_MODEL ?? DEFAULT_MODEL
-  const client = new Anthropic()
+  const model = process.env.GEMINI_MODEL ?? DEFAULT_MODEL
+  const ai = new GoogleGenAI({ apiKey })
 
-  const response = await client.messages.create({
+  const response = await ai.models.generateContent({
     model,
-    max_tokens: 2048,
-    system: EXTRACTION_SYSTEM_PROMPT,
-    tools: [DISCOVERY_TOOL],
-    tool_choice: { type: 'tool', name: 'record_discovery' },
-    messages: [{ role: 'user', content: notes }],
+    contents: notes,
+    config: {
+      systemInstruction: EXTRACTION_SYSTEM_PROMPT,
+      responseMimeType: 'application/json',
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      responseSchema: DISCOVERY_SCHEMA as any,
+      temperature: 0.0,
+    },
   })
 
-  const toolUse = response.content.find((b) => b.type === 'tool_use')
-  if (!toolUse || toolUse.type !== 'tool_use') {
-    throw new Error('Model did not invoke the record_discovery tool.')
+  const text = response.text ?? ''
+  if (!text.trim()) {
+    throw new Error('Model returned an empty response.')
   }
 
-  const raw = toolUse.input as Partial<DiscoveryInput>
+  let raw: Partial<DiscoveryInput>
+  try {
+    raw = JSON.parse(text) as Partial<DiscoveryInput>
+  } catch {
+    throw new Error(
+      `Model response was not valid JSON. First 200 chars: ${text.slice(0, 200)}`,
+    )
+  }
+
   const discovery = clean(raw)
   const extractedFields = flattenFilledKeys(discovery as Record<string, unknown>)
 
