@@ -101,12 +101,12 @@ export function computeCurrentState(d: DiscoveryInput): CurrentStateOutput {
           })
   } else {
     redemptionRateM = missingMetric({
-      unit: 'ratio',
+      unit: 'percent',
       formula: 'pointsRedeemed ÷ pointsIssued',
       missing: ['pointsIssued', 'pointsRedeemed'],
     })
     breakageRateM = missingMetric({
-      unit: 'ratio',
+      unit: 'percent',
       formula: '1 − (pointsRedeemed ÷ pointsIssued)',
       missing: ['pointsIssued', 'pointsRedeemed'],
     })

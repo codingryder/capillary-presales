@@ -1,11 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import type { DiscoveryInput } from '@/lib/types/discovery'
+import { SAMPLE_DISCOVERY } from '@/lib/sample'
 import { computeCurrentState } from './current-state'
 import { isComputed } from './util'
 
 /**
- * Worked example used across the calc tests. Keep numbers round so reviewers can
- * verify by inspection:
+ * Worked example used across the calc tests. The canonical SAMPLE_DISCOVERY
+ * lives in `lib/sample.ts` so the UI's "Load sample" button and the tests share
+ * the same dataset. Numbers chosen so a reviewer can verify by inspection:
  *
  *   activeMembers       = 100,000
  *   pointsIssued        = 50,000,000 over 6 months → 100M annualised
@@ -28,19 +29,6 @@ import { isComputed } from './util'
  *   grossMargin         = 200M × 0.30       = ₹60,000,000
  *   rewardSpend         = 200M × 0.05       = ₹10,000,000
  */
-export const SAMPLE_DISCOVERY: DiscoveryInput = {
-  prospect: { name: 'Acme Retail', currency: 'INR' },
-  members: { total: 250_000, active: 100_000, lapsed: 150_000 },
-  timeframeMonths: 6,
-  pointsIssued: 50_000_000,
-  pointsRedeemed: 20_000_000,
-  outstandingPoints: 30_000_000,
-  pointValue: 0.1,
-  averageOrderValue: 500,
-  purchaseFrequencyPerYear: 4,
-  grossMarginPct: 0.3,
-  rewardCostPctOfRevenue: 0.05,
-}
 
 describe('computeCurrentState — happy path', () => {
   const { result, missing } = computeCurrentState(SAMPLE_DISCOVERY)

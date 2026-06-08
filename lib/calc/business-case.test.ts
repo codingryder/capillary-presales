@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { Assumptions } from '@/lib/types/assumptions'
+import { SAMPLE_DISCOVERY } from '@/lib/sample'
 import { buildBusinessCase } from './business-case'
-import { SAMPLE_DISCOVERY } from './current-state.test'
 
 /**
  * Worked deltas from the SAMPLE_DISCOVERY + FUTURE_ASSUMPTIONS pair:

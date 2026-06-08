@@ -64,7 +64,7 @@ export function buildBusinessCase(
           value:
             (future.redemptionRate.value as number) -
             (current.redemptionRate.value as number),
-          unit: 'ratio',
+          unit: 'percent',
           formula: 'futureRedemptionRate − currentRedemptionRate',
           inputs: {
             current: current.redemptionRate.value as number,
@@ -72,7 +72,7 @@ export function buildBusinessCase(
           },
         })
       : missingMetric({
-          unit: 'ratio',
+          unit: 'percent',
           formula: 'futureRedemptionRate − currentRedemptionRate',
           missing: ['current.redemptionRate', 'future.redemptionRate'],
         })

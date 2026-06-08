@@ -39,7 +39,7 @@ export function redemptionRate(args: {
   }
   return metric({
     value: args.pointsRedeemed / args.pointsIssued,
-    unit: 'ratio',
+    unit: 'percent',
     formula: 'pointsRedeemed ÷ pointsIssued',
     inputs: { pointsIssued: args.pointsIssued, pointsRedeemed: args.pointsRedeemed },
   })
@@ -69,7 +69,7 @@ export function breakageRate(args: {
   }
   return metric({
     value: 1 - args.pointsRedeemed / args.pointsIssued,
-    unit: 'ratio',
+    unit: 'percent',
     formula: '1 − (pointsRedeemed ÷ pointsIssued)',
     inputs: { pointsIssued: args.pointsIssued, pointsRedeemed: args.pointsRedeemed },
   })

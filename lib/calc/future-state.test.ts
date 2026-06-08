@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { Assumptions } from '@/lib/types/assumptions'
+import { SAMPLE_DISCOVERY } from '@/lib/sample'
 import { computeFutureState } from './future-state'
-import { SAMPLE_DISCOVERY } from './current-state.test'
 
 /**
  * Future-state assumptions used across these tests:

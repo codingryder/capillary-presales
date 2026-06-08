@@ -163,7 +163,7 @@ export function computeFutureState(
     )
     redemptionRateM = metric({
       value: futureRr,
-      unit: 'ratio',
+      unit: 'percent',
       formula:
         'min(1, currentRedemptionRate + redemptionRateUpliftPp)',
       inputs: {
@@ -173,7 +173,7 @@ export function computeFutureState(
     })
   } else {
     redemptionRateM = missingMetric({
-      unit: 'ratio',
+      unit: 'percent',
       formula: 'min(1, currentRedemptionRate + redemptionRateUpliftPp)',
       missing: ['currentRedemptionRate'],
     })
@@ -182,12 +182,12 @@ export function computeFutureState(
   const breakageRateM: Metric = isComputed(redemptionRateM)
     ? metric({
         value: 1 - (redemptionRateM.value as number),
-        unit: 'ratio',
+        unit: 'percent',
         formula: '1 − futureRedemptionRate',
         inputs: { futureRedemptionRate: redemptionRateM.value as number },
       })
     : missingMetric({
-        unit: 'ratio',
+        unit: 'percent',
         formula: '1 − futureRedemptionRate',
         missing: ['futureRedemptionRate'],
       })
