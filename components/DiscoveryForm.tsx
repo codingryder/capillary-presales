@@ -3,6 +3,7 @@
 import { useStore } from '@/lib/state/store'
 import { Section } from './Section'
 import { NumberField, SelectField, TextAreaField, TextField } from './Field'
+import { PasteNotesPanel } from './PasteNotesPanel'
 import type { Channel } from '@/lib/types/discovery'
 
 const CHANNELS: { value: Channel; label: string }[] = [
@@ -37,8 +38,11 @@ export function DiscoveryForm() {
         Capture the prospect&rsquo;s current loyalty program. Every field is optional;
         anything missing surfaces as &ldquo;needs input&rdquo; on the review and business-case
         screens, so the SA knows what&rsquo;s driving uncertainty. Use{' '}
-        <span className="font-medium">Load sample</span> for a worked example.
+        <span className="font-medium">Load sample</span> for a worked example, or paste
+        raw call notes below to auto-fill.
       </p>
+
+      <PasteNotesPanel />
 
       <Section title="Prospect" hint="Who the deal is with.">
         <TextField
