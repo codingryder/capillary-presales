@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { useStore, useCurrency } from '@/lib/state/store'
 import { buildBusinessCase } from '@/lib/calc/business-case'
 import { ASSUMPTION_LABELS } from '@/lib/types/assumptions'
@@ -18,6 +18,34 @@ export function BusinessCaseView() {
 
   const prospectName = discovery.prospect?.name?.trim() || 'Prospect'
 
+  const [narrative, setNarrative] = useState<string | null>(null)
+  const [narrativeModel, setNarrativeModel] = useState<string | null>(null)
+  const [loadingNarrative, setLoadingNarrative] = useState(false)
+  const [narrativeError, setNarrativeError] = useState<string | null>(null)
+
+  const onGenerateNarrative = async () => {
+    setLoadingNarrative(true)
+    setNarrativeError(null)
+    try {
+      const res = await fetch('/api/narrative', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ discovery, assumptions }),
+      })
+      if (!res.ok) {
+        const j = (await res.json().catch(() => ({}))) as { error?: string }
+        throw new Error(j.error || `Request failed (${res.status}).`)
+      }
+      const data = (await res.json()) as { narrative: string; model: string }
+      setNarrative(data.narrative)
+      setNarrativeModel(data.model)
+    } catch (e) {
+      setNarrativeError(e instanceof Error ? e.message : 'Generation failed.')
+    } finally {
+      setLoadingNarrative(false)
+    }
+  }
+
   return (
     <div className="flex flex-col gap-6">
       <header className="flex flex-wrap items-start justify-between gap-3 print:hidden">
@@ -29,13 +57,25 @@ export function BusinessCaseView() {
             working.
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <button
             type="button"
             onClick={() => setStep('review')}
             className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-700 shadow-sm hover:bg-slate-50"
           >
             ← Edit assumptions
+          </button>
+          <button
+            type="button"
+            onClick={onGenerateNarrative}
+            disabled={loadingNarrative}
+            className="rounded-md border border-indigo-600 bg-white px-3 py-1.5 text-sm font-medium text-indigo-700 shadow-sm hover:bg-indigo-50 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {loadingNarrative
+              ? 'Writing…'
+              : narrative
+                ? 'Regenerate summary'
+                : 'Generate executive summary'}
           </button>
           <button
             type="button"
@@ -46,6 +86,12 @@ export function BusinessCaseView() {
           </button>
         </div>
       </header>
+
+      {narrativeError ? (
+        <div className="rounded-lg border border-rose-300 bg-rose-50 px-4 py-2 text-sm text-rose-800 print:hidden">
+          ⚠ {narrativeError}
+        </div>
+      ) : null}
 
       <section className="rounded-xl border border-slate-200 bg-white p-8 shadow-sm print:shadow-none print:border-0">
         <div className="mb-6">
@@ -97,6 +143,32 @@ export function BusinessCaseView() {
           )}
         </div>
       </section>
+
+      {narrative ? (
+        <section className="rounded-xl border border-slate-200 bg-white p-8 shadow-sm print:shadow-none print:border-0">
+          <header className="mb-3 flex items-center justify-between print:hidden">
+            <h3 className="text-base font-semibold text-slate-900">
+              Executive summary
+            </h3>
+            {narrativeModel ? (
+              <span className="text-xs text-slate-400">
+                drafted by <code>{narrativeModel}</code>
+              </span>
+            ) : null}
+          </header>
+          <h3 className="hidden print:block text-base font-semibold text-slate-900 mb-3">
+            Executive summary
+          </h3>
+          <div className="whitespace-pre-wrap text-sm leading-relaxed text-slate-700">
+            {narrative}
+          </div>
+          <p className="mt-3 text-xs text-slate-400 print:hidden">
+            Numbers in this summary are pulled verbatim from the deterministic
+            calc engine — the model is forbidden from altering or inventing
+            figures.
+          </p>
+        </section>
+      ) : null}
 
       <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
         <header className="border-b border-slate-100 px-6 py-4">
