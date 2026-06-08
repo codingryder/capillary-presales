@@ -4,6 +4,7 @@ import { useStore } from '@/lib/state/store'
 import { Section } from './Section'
 import { NumberField, SelectField, TextAreaField, TextField } from './Field'
 import { PasteNotesPanel } from './PasteNotesPanel'
+import { RequirementsField } from './RequirementsField'
 import type { Channel } from '@/lib/types/discovery'
 
 const CHANNELS: { value: Channel; label: string }[] = [
@@ -236,6 +237,13 @@ export function DiscoveryForm() {
             )
           })}
         </div>
+      </Section>
+
+      <Section
+        title="Requirements / pain points"
+        hint="What the prospect's current program is missing or struggling with — drives which Capillary capabilities are auto-suggested on the next screen."
+      >
+        <RequirementsField />
       </Section>
 
       <Section title="Call notes" hint="Free text — useful context for the narrative.">

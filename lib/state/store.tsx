@@ -8,13 +8,25 @@ import {
   useState,
   type ReactNode,
 } from 'react'
-import type { Assumptions } from '@/lib/types/assumptions'
-import type { DiscoveryInput, ProgramMeta, ProspectMeta, MembersShape } from '@/lib/types/discovery'
+import type {
+  CapabilitySelection,
+  DerivedAssumptions,
+  Scenario,
+} from '@/lib/types/capability'
+import type {
+  DiscoveryInput,
+  ProgramMeta,
+  ProspectMeta,
+  MembersShape,
+} from '@/lib/types/discovery'
+import { deriveAssumptions } from '@/lib/capabilities/derive'
 import {
-  EMPTY_ASSUMPTIONS,
+  EMPTY_CAPABILITY_SELECTION,
   EMPTY_DISCOVERY,
-  SAMPLE_ASSUMPTIONS,
+  SAMPLE_CAPABILITY_SELECTION,
   SAMPLE_DISCOVERY,
+  SAMPLE_IMPL_COST,
+  SAMPLE_PLATFORM_COST,
 } from '@/lib/sample'
 
 export type WizardStep = 'discovery' | 'review' | 'business-case'
@@ -30,12 +42,23 @@ type StoreValue = {
   updateProgram: (patch: Partial<ProgramMeta>) => void
   updateMembers: (patch: Partial<MembersShape>) => void
 
-  assumptions: Assumptions
-  setAssumptions: (next: Assumptions) => void
-  updateAssumption: <K extends keyof Assumptions>(key: K, value: Assumptions[K]) => void
+  /** Selection of Capillary capabilities and their per-capability scenarios. */
+  capabilitySelection: CapabilitySelection
+  toggleCapability: (capId: string, scenario?: Scenario) => void
+  setCapabilityScenario: (capId: string, scenario: Scenario) => void
+  setAllCapabilityScenarios: (scenario: Scenario) => void
+  clearCapabilities: () => void
+
+  /** Commercial inputs — direct, not derived from capabilities. */
+  annualPlatformCost: number
+  oneTimeImplementationCost: number
+  setAnnualPlatformCost: (value: number) => void
+  setOneTimeImplementationCost: (value: number) => void
+
+  /** Derived from capabilitySelection + costs. Read-only output the UI consumes. */
+  derived: DerivedAssumptions
 
   loadSample: () => void
-  resetAssumptions: () => void
   resetAll: () => void
 }
 
@@ -44,7 +67,11 @@ const StoreContext = createContext<StoreValue | null>(null)
 export function StoreProvider({ children }: { children: ReactNode }) {
   const [step, setStep] = useState<WizardStep>('discovery')
   const [discovery, setDiscovery] = useState<DiscoveryInput>(EMPTY_DISCOVERY)
-  const [assumptions, setAssumptions] = useState<Assumptions>(EMPTY_ASSUMPTIONS)
+  const [capabilitySelection, setCapabilitySelection] =
+    useState<CapabilitySelection>(EMPTY_CAPABILITY_SELECTION)
+  const [annualPlatformCost, setAnnualPlatformCost] = useState<number>(0)
+  const [oneTimeImplementationCost, setOneTimeImplementationCost] =
+    useState<number>(0)
 
   const updateDiscovery = useCallback((patch: Partial<DiscoveryInput>) => {
     setDiscovery((d) => ({ ...d, ...patch }))
@@ -71,26 +98,63 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     }))
   }, [])
 
-  const updateAssumption = useCallback(
-    <K extends keyof Assumptions>(key: K, value: Assumptions[K]) => {
-      setAssumptions((a) => ({ ...a, [key]: value }))
+  const toggleCapability = useCallback(
+    (capId: string, scenario: Scenario = 'mid') => {
+      setCapabilitySelection((sel) => {
+        const next = { ...sel }
+        if (capId in next) {
+          delete next[capId]
+        } else {
+          next[capId] = scenario
+        }
+        return next
+      })
     },
     [],
   )
 
-  const loadSample = useCallback(() => {
-    setDiscovery(SAMPLE_DISCOVERY)
-    setAssumptions(SAMPLE_ASSUMPTIONS)
-    setStep('discovery')
+  const setCapabilityScenario = useCallback(
+    (capId: string, scenario: Scenario) => {
+      setCapabilitySelection((sel) => ({ ...sel, [capId]: scenario }))
+    },
+    [],
+  )
+
+  const setAllCapabilityScenarios = useCallback((scenario: Scenario) => {
+    setCapabilitySelection((sel) => {
+      const next: CapabilitySelection = {}
+      for (const k of Object.keys(sel)) next[k] = scenario
+      return next
+    })
   }, [])
 
-  const resetAssumptions = useCallback(() => {
-    setAssumptions(EMPTY_ASSUMPTIONS)
+  const clearCapabilities = useCallback(() => {
+    setCapabilitySelection({})
+  }, [])
+
+  const derived = useMemo(
+    () =>
+      deriveAssumptions({
+        selection: capabilitySelection,
+        annualPlatformCost,
+        oneTimeImplementationCost,
+      }),
+    [capabilitySelection, annualPlatformCost, oneTimeImplementationCost],
+  )
+
+  const loadSample = useCallback(() => {
+    setDiscovery(SAMPLE_DISCOVERY)
+    setCapabilitySelection(SAMPLE_CAPABILITY_SELECTION)
+    setAnnualPlatformCost(SAMPLE_PLATFORM_COST)
+    setOneTimeImplementationCost(SAMPLE_IMPL_COST)
+    setStep('discovery')
   }, [])
 
   const resetAll = useCallback(() => {
     setDiscovery(EMPTY_DISCOVERY)
-    setAssumptions(EMPTY_ASSUMPTIONS)
+    setCapabilitySelection(EMPTY_CAPABILITY_SELECTION)
+    setAnnualPlatformCost(0)
+    setOneTimeImplementationCost(0)
     setStep('discovery')
   }, [])
 
@@ -104,24 +168,35 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       updateProspect,
       updateProgram,
       updateMembers,
-      assumptions,
-      setAssumptions,
-      updateAssumption,
+      capabilitySelection,
+      toggleCapability,
+      setCapabilityScenario,
+      setAllCapabilityScenarios,
+      clearCapabilities,
+      annualPlatformCost,
+      oneTimeImplementationCost,
+      setAnnualPlatformCost,
+      setOneTimeImplementationCost,
+      derived,
       loadSample,
-      resetAssumptions,
       resetAll,
     }),
     [
       step,
       discovery,
-      assumptions,
+      capabilitySelection,
+      annualPlatformCost,
+      oneTimeImplementationCost,
+      derived,
       updateDiscovery,
       updateProspect,
       updateProgram,
       updateMembers,
-      updateAssumption,
+      toggleCapability,
+      setCapabilityScenario,
+      setAllCapabilityScenarios,
+      clearCapabilities,
       loadSample,
-      resetAssumptions,
       resetAll,
     ],
   )

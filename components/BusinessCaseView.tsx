@@ -4,17 +4,42 @@ import { useMemo, useState } from 'react'
 import { useStore, useCurrency } from '@/lib/state/store'
 import { buildBusinessCase } from '@/lib/calc/business-case'
 import { ASSUMPTION_LABELS } from '@/lib/types/assumptions'
+import { CAPABILITY_BY_ID } from '@/lib/capabilities/catalog'
+import type { Capability, Scenario } from '@/lib/types/capability'
 import { MetricCell } from './MetricCell'
 import { formatCurrency, formatPercent } from '@/lib/format'
 
+const SCENARIO_LABEL: Record<Scenario, string> = {
+  low: 'Low',
+  mid: 'Typical',
+  high: 'High',
+}
+
 export function BusinessCaseView() {
-  const { discovery, assumptions, setStep } = useStore()
+  const {
+    discovery,
+    derived,
+    capabilitySelection,
+    annualPlatformCost,
+    oneTimeImplementationCost,
+    setStep,
+  } = useStore()
   const currency = useCurrency()
+  const assumptions = derived.assumptions
 
   const bc = useMemo(
-    () => buildBusinessCase(discovery, assumptions),
-    [discovery, assumptions],
+    () => buildBusinessCase(discovery, assumptions, derived),
+    [discovery, assumptions, derived],
   )
+
+  const selectedCaps = useMemo<{ cap: Capability; scenario: Scenario }[]>(() => {
+    const out: { cap: Capability; scenario: Scenario }[] = []
+    for (const [id, scenario] of Object.entries(capabilitySelection)) {
+      const cap = CAPABILITY_BY_ID[id]
+      if (cap) out.push({ cap, scenario })
+    }
+    return out
+  }, [capabilitySelection])
 
   const prospectName = discovery.prospect?.name?.trim() || 'Prospect'
 
@@ -30,7 +55,12 @@ export function BusinessCaseView() {
       const res = await fetch('/api/narrative', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ discovery, assumptions }),
+        body: JSON.stringify({
+          discovery,
+          capabilitySelection,
+          annualPlatformCost,
+          oneTimeImplementationCost,
+        }),
       })
       if (!res.ok) {
         const j = (await res.json().catch(() => ({}))) as { error?: string }
@@ -147,6 +177,35 @@ export function BusinessCaseView() {
           )}
         </div>
       </section>
+
+      {selectedCaps.length > 0 ? (
+        <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm print:shadow-none print:border-0">
+          <header className="mb-3">
+            <h3 className="text-base font-semibold text-slate-900">
+              Capillary capabilities modelled
+            </h3>
+            <p className="mt-1 text-xs text-slate-500">
+              This case assumes the prospect adopts the following capabilities.
+              Assumption levers on the next section are derived from their
+              calibrated impact ranges (placeholder ranges pending SA / finance
+              review).
+            </p>
+          </header>
+          <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+            {selectedCaps.map(({ cap, scenario }) => (
+              <li
+                key={cap.id}
+                className="flex items-baseline justify-between gap-2 rounded-md border border-slate-100 bg-slate-50 px-3 py-2 text-sm"
+              >
+                <span className="font-medium text-slate-800">{cap.name}</span>
+                <span className="text-xs text-slate-500">
+                  {SCENARIO_LABEL[scenario]}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
 
       {narrative ? (
         <section className="rounded-xl border border-slate-200 bg-white p-8 shadow-sm print:shadow-none print:border-0">

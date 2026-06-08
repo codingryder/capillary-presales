@@ -4,10 +4,9 @@ import { useMemo } from 'react'
 import { useStore, useCurrency } from '@/lib/state/store'
 import { computeCurrentState } from '@/lib/calc/current-state'
 import { computeFutureState } from '@/lib/calc/future-state'
-import { ASSUMPTION_LABELS, DEFAULT_ASSUMPTIONS } from '@/lib/types/assumptions'
 import type { EconomicsResult } from '@/lib/types/economics'
 import { MetricCell } from './MetricCell'
-import { NumberField } from './Field'
+import { CapabilitiesPanel } from './CapabilitiesPanel'
 
 type Row = {
   label: string
@@ -32,8 +31,7 @@ const ROWS: Row[] = [
 ]
 
 export function ReviewView() {
-  const { discovery, assumptions, updateAssumption, resetAssumptions, setStep } =
-    useStore()
+  const { discovery, derived, setStep } = useStore()
   const currency = useCurrency()
 
   const { result: current, missing: currentMissing } = useMemo(
@@ -41,8 +39,8 @@ export function ReviewView() {
     [discovery],
   )
   const { result: future, missing: futureMissing } = useMemo(
-    () => computeFutureState(discovery, assumptions),
-    [discovery, assumptions],
+    () => computeFutureState(discovery, derived.assumptions),
+    [discovery, derived.assumptions],
   )
   const missing = Array.from(new Set([...currentMissing, ...futureMissing]))
 
@@ -54,10 +52,10 @@ export function ReviewView() {
             Review &amp; model
           </h2>
           <p className="mt-1 text-sm text-slate-600">
-            Current-state economics derived from discovery. Edit the
-            future-state assumptions on the right to model what Capillary
-            delivers — every number on this page is traceable to its formula
-            and inputs (click any value).
+            Current-state economics derived from discovery. On the right, pick
+            which Capillary capabilities you&rsquo;d propose — assumption levers
+            are derived from your selection, with full traceability (click any
+            value).
           </p>
         </div>
       </div>
@@ -116,103 +114,8 @@ export function ReviewView() {
           </table>
         </section>
 
-        <aside className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-          <header className="mb-4 flex items-center justify-between">
-            <h3 className="text-base font-semibold text-slate-900">
-              Future-state assumptions
-            </h3>
-            <button
-              type="button"
-              onClick={resetAssumptions}
-              className="text-xs text-indigo-600 hover:underline"
-            >
-              Reset to defaults
-            </button>
-          </header>
-          <div className="rounded-md bg-amber-50 px-3 py-2 text-xs text-amber-800 mb-4">
-            Placeholders — calibrate with Capillary SA / finance before any external
-            demo. Defaults are illustrative only.
-          </div>
-          <div className="flex flex-col gap-3">
-            <NumberField
-              label={ASSUMPTION_LABELS.redemptionRateUpliftPp}
-              value={assumptions.redemptionRateUpliftPp * 100}
-              onChange={(v) =>
-                updateAssumption(
-                  'redemptionRateUpliftPp',
-                  v !== undefined ? v / 100 : DEFAULT_ASSUMPTIONS.redemptionRateUpliftPp,
-                )
-              }
-              suffix="pp"
-              step="0.5"
-            />
-            <NumberField
-              label={ASSUMPTION_LABELS.retentionUpliftPct}
-              value={assumptions.retentionUpliftPct * 100}
-              onChange={(v) =>
-                updateAssumption(
-                  'retentionUpliftPct',
-                  v !== undefined ? v / 100 : DEFAULT_ASSUMPTIONS.retentionUpliftPct,
-                )
-              }
-              suffix="%"
-              step="0.5"
-            />
-            <NumberField
-              label={ASSUMPTION_LABELS.frequencyUpliftPct}
-              value={assumptions.frequencyUpliftPct * 100}
-              onChange={(v) =>
-                updateAssumption(
-                  'frequencyUpliftPct',
-                  v !== undefined ? v / 100 : DEFAULT_ASSUMPTIONS.frequencyUpliftPct,
-                )
-              }
-              suffix="%"
-              step="0.5"
-            />
-            <NumberField
-              label={ASSUMPTION_LABELS.aovUpliftPct}
-              value={assumptions.aovUpliftPct * 100}
-              onChange={(v) =>
-                updateAssumption(
-                  'aovUpliftPct',
-                  v !== undefined ? v / 100 : DEFAULT_ASSUMPTIONS.aovUpliftPct,
-                )
-              }
-              suffix="%"
-              step="0.5"
-            />
-            <NumberField
-              label={ASSUMPTION_LABELS.rewardCostDeltaPct}
-              value={assumptions.rewardCostDeltaPct * 100}
-              onChange={(v) =>
-                updateAssumption(
-                  'rewardCostDeltaPct',
-                  v !== undefined ? v / 100 : DEFAULT_ASSUMPTIONS.rewardCostDeltaPct,
-                )
-              }
-              suffix="%"
-              step="0.5"
-            />
-            <NumberField
-              label={ASSUMPTION_LABELS.annualPlatformCost}
-              value={assumptions.annualPlatformCost}
-              onChange={(v) =>
-                updateAssumption('annualPlatformCost', v ?? 0)
-              }
-              step={100000}
-              suffix={currency}
-            />
-            <NumberField
-              label={ASSUMPTION_LABELS.oneTimeImplementationCost}
-              value={assumptions.oneTimeImplementationCost}
-              onChange={(v) =>
-                updateAssumption('oneTimeImplementationCost', v ?? 0)
-              }
-              step={100000}
-              suffix={currency}
-            />
-          </div>
+        <aside>
+          <CapabilitiesPanel />
         </aside>
       </div>
 

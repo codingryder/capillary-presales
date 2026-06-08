@@ -1,9 +1,14 @@
 import Anthropic from '@anthropic-ai/sdk'
-import type { Assumptions } from '@/lib/types/assumptions'
-import type { DiscoveryInput } from '@/lib/types/discovery'
 import type { BusinessCase } from '@/lib/types/business-case'
+import type {
+  CapabilitySelection,
+  DerivedAssumptions,
+} from '@/lib/types/capability'
+import type { DiscoveryInput } from '@/lib/types/discovery'
 import type { Metric } from '@/lib/types/metric'
 import { buildBusinessCase } from '@/lib/calc/business-case'
+import { CAPABILITY_BY_ID } from '@/lib/capabilities/catalog'
+import { deriveAssumptions } from '@/lib/capabilities/derive'
 
 const DEFAULT_MODEL = 'claude-sonnet-4-6'
 
@@ -21,17 +26,10 @@ Hard rules — these are non-negotiable:
 
 Structure:
 - Paragraph 1 (headline): Lead with the annual incremental margin and the 3-year net value. Mention payback period if present.
-- Paragraph 2 (what changes): How member revenue, gross margin, redemption rate, and breakage value shift between current and future state. Quote the magnitudes from the payload.
-- Paragraph 3 (qualitative): Ground the case in the prospect's specific posture, drawing on the "qualitative" notes field. If the qualitative field is empty or null, omit this paragraph entirely.
+- Paragraph 2 (what changes): How member revenue, gross margin, redemption rate, and breakage value shift between current and future state. Quote the magnitudes from the payload. Reference up to 3 of the highest-impact Capillary capabilities by name when describing what drives the change.
+- Paragraph 3 (qualitative): Ground the case in the prospect's specific posture, drawing on the "qualitative" notes field and the captured "requirements". If both are empty, omit this paragraph entirely.
 
 End on a sober, specific note. Do not solicit follow-up or recommend next steps unless the qualitative field clearly directs it.`
-
-/**
- * What we hand to the model. Drop NaN metrics to null, and pre-format
- * currency-typed values so the model can quote them verbatim rather than
- * re-formatting numbers we'd then have to verify.
- */
-type LLMPayload = ReturnType<typeof toLLMPayload>
 
 function fmtCurrency(value: number, currency: string): string {
   const locale =
@@ -72,13 +70,31 @@ function metricForLLM(m: Metric, currency: string) {
   }
 }
 
-function toLLMPayload(bc: BusinessCase) {
+function selectedCapabilitiesPayload(derived: DerivedAssumptions) {
+  return derived.selectedCapabilityIds
+    .map((id) => {
+      const cap = CAPABILITY_BY_ID[id]
+      if (!cap) return null
+      return {
+        id: cap.id,
+        name: cap.name,
+        category: cap.category,
+        description: cap.description,
+        addresses: cap.addresses,
+      }
+    })
+    .filter((x): x is NonNullable<typeof x> => x !== null)
+}
+
+function toLLMPayload(bc: BusinessCase, derived: DerivedAssumptions) {
   const currency = bc.discovery.prospect?.currency ?? 'INR'
   const m = (metric: Metric) => metricForLLM(metric, currency)
   return {
     prospect: bc.discovery.prospect,
     currency,
+    requirements: bc.discovery.requirements ?? [],
     qualitative: bc.discovery.notes ?? null,
+    capabilitiesModelled: selectedCapabilitiesPayload(derived),
     current: {
       memberRevenue: m(bc.current.memberRevenue),
       grossMargin: m(bc.current.grossMargin),
@@ -110,10 +126,16 @@ function toLLMPayload(bc: BusinessCase) {
         ? m(bc.headline.paybackMonths)
         : null,
     },
-    assumptions: {
-      ...bc.assumptions,
+    derivedAssumptions: {
       _notes:
-        'These uplift assumptions are placeholders pending Capillary SA / finance calibration. Do not present them as guarantees.',
+        'Levers below are derived from the capabilitiesModelled list above. Treat them as fixed; do not propose changes.',
+      redemptionRateUpliftPp: bc.assumptions.redemptionRateUpliftPp,
+      retentionUpliftPct: bc.assumptions.retentionUpliftPct,
+      frequencyUpliftPct: bc.assumptions.frequencyUpliftPct,
+      aovUpliftPct: bc.assumptions.aovUpliftPct,
+      rewardCostDeltaPct: bc.assumptions.rewardCostDeltaPct,
+      annualPlatformCost: bc.assumptions.annualPlatformCost,
+      oneTimeImplementationCost: bc.assumptions.oneTimeImplementationCost,
     },
     missingInputs: bc.missingInputs,
   } as const
@@ -122,13 +144,14 @@ function toLLMPayload(bc: BusinessCase) {
 export type NarrativeResult = {
   narrative: string
   model: string
-  payload: LLMPayload
 }
 
-export async function generateNarrative(
-  discovery: DiscoveryInput,
-  assumptions: Assumptions,
-): Promise<NarrativeResult> {
+export async function generateNarrative(args: {
+  discovery: DiscoveryInput
+  capabilitySelection: CapabilitySelection
+  annualPlatformCost: number
+  oneTimeImplementationCost: number
+}): Promise<NarrativeResult> {
   if (!process.env.ANTHROPIC_API_KEY) {
     throw new Error(
       'ANTHROPIC_API_KEY is not configured. Add it to .env.local and restart the dev server.',
@@ -137,8 +160,13 @@ export async function generateNarrative(
   const model = process.env.ANTHROPIC_MODEL ?? DEFAULT_MODEL
   const client = new Anthropic()
 
-  const bc = buildBusinessCase(discovery, assumptions)
-  const payload = toLLMPayload(bc)
+  const derived = deriveAssumptions({
+    selection: args.capabilitySelection,
+    annualPlatformCost: args.annualPlatformCost,
+    oneTimeImplementationCost: args.oneTimeImplementationCost,
+  })
+  const bc = buildBusinessCase(args.discovery, derived.assumptions, derived)
+  const payload = toLLMPayload(bc, derived)
   const payloadJson = JSON.stringify(payload, null, 2)
 
   const response = await client.messages.create({
@@ -166,5 +194,5 @@ export async function generateNarrative(
     throw new Error('Model returned an empty narrative.')
   }
 
-  return { narrative, model, payload }
+  return { narrative, model }
 }

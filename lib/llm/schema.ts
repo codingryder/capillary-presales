@@ -83,6 +83,30 @@ export const DISCOVERY_TOOL = {
           enum: ['web', 'app', 'pos', 'callcenter', 'partner', 'other'],
         },
       },
+      requirements: {
+        type: 'array',
+        description:
+          "Discovery findings — what the prospect's current program is missing or struggling with. Drive auto-suggestion of which Capillary capabilities to model. Pick all that the notes clearly indicate.",
+        items: {
+          type: 'string',
+          enum: [
+            'weak-app-engagement',
+            'no-personalisation',
+            'lapsing-members',
+            'high-reward-cost',
+            'static-tier-mechanics',
+            'no-omnichannel',
+            'limited-partner-ecosystem',
+            'poor-segmentation',
+            'low-redemption',
+            'manual-campaigns',
+            'no-real-time-events',
+            'compliance-gaps',
+            'weak-analytics',
+            'shared-spend-blind',
+          ],
+        },
+      },
       notes: {
         type: 'string',
         description:
@@ -104,4 +128,5 @@ Hard rules — these are non-negotiable:
 5. Lakh / crore notation: 1 lakh = 100,000; 1 crore = 10,000,000. Convert to raw numbers.
 6. Currency detection: ₹/Rs/INR → "INR"; $/USD → "USD"; AED/dh → "AED"; £/GBP → "GBP"; €/EUR → "EUR".
 7. If the notes mention what Capillary or the SA would propose / promise / project, IGNORE it. You are only recording the current-state baseline.
-8. The "notes" field is for short qualitative context only — do not restate any number that already has its own structured field.`
+8. The "notes" field is for short qualitative context only — do not restate any number that already has its own structured field.
+9. The "requirements" field captures qualitative pain points the prospect mentions about their CURRENT program — weak app engagement, no personalisation, lapsing members, high reward cost, etc. Only include entries the notes clearly support; never infer from a vague phrase.`

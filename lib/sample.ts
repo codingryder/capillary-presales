@@ -1,4 +1,4 @@
-import { DEFAULT_ASSUMPTIONS, type Assumptions } from './types/assumptions'
+import type { CapabilitySelection } from './types/capability'
 import type { DiscoveryInput } from './types/discovery'
 
 /**
@@ -30,29 +30,37 @@ export const SAMPLE_DISCOVERY: DiscoveryInput = {
   grossMarginPct: 0.3,
   rewardCostPctOfRevenue: 0.05,
   channels: ['web', 'app', 'pos'],
+  requirements: [
+    'weak-app-engagement',
+    'no-personalisation',
+    'lapsing-members',
+    'low-redemption',
+    'static-tier-mechanics',
+  ],
   notes:
     'Legacy in-house program, weak app engagement, no personalised earn — strong appetite for richer mechanics and breakage optimisation.',
 }
 
 /**
- * Illustrative future-state lever set that lines up with the worked example in
- * the business-case tests. Distinct from DEFAULT_ASSUMPTIONS so the user can
- * load it as a "demo scenario" and still have unedited DEFAULT_ASSUMPTIONS to
- * fall back to.
+ * Sample capability selection that lines up with the SAMPLE_DISCOVERY
+ * requirements above. Default all to the "mid" scenario.
  */
-export const SAMPLE_ASSUMPTIONS: Assumptions = {
-  redemptionRateUpliftPp: 0.1,
-  retentionUpliftPct: 0.1,
-  frequencyUpliftPct: 0.05,
-  aovUpliftPct: 0.05,
-  rewardCostDeltaPct: -0.2,
-  annualPlatformCost: 5_000_000,
-  oneTimeImplementationCost: 10_000_000,
+export const SAMPLE_CAPABILITY_SELECTION: CapabilitySelection = {
+  'personalised-earn': 'mid',
+  'gamified-challenges': 'mid',
+  'wallet-instant-redemption': 'mid',
+  'soft-tier-mechanics': 'mid',
+  'breakage-optimisation': 'mid',
+  'winback-automation': 'mid',
+  'rfm-segmentation': 'mid',
 }
+
+export const SAMPLE_PLATFORM_COST = 5_000_000
+export const SAMPLE_IMPL_COST = 10_000_000
 
 export const EMPTY_DISCOVERY: DiscoveryInput = {
   prospect: { currency: 'INR' },
   timeframeMonths: 12,
 }
 
-export const EMPTY_ASSUMPTIONS: Assumptions = { ...DEFAULT_ASSUMPTIONS }
+export const EMPTY_CAPABILITY_SELECTION: CapabilitySelection = {}

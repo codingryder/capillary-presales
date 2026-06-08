@@ -1,4 +1,5 @@
 import type { Assumptions } from './assumptions'
+import type { DerivedAssumptions } from './capability'
 import type { DiscoveryInput } from './discovery'
 import type { EconomicsResult } from './economics'
 import type { Metric } from './metric'
@@ -21,6 +22,13 @@ export type BusinessCase = {
   delta: BusinessCaseDelta
   headline: BusinessCaseHeadline
   assumptions: Assumptions
+  /**
+   * Optional. Set when the assumptions were derived from a CapabilitySelection
+   * via `deriveAssumptions`. Carries the full provenance trail (which caps
+   * contributed how much to each lever) so the UI / narrative can explain
+   * the future state as "modelled on these N Capillary capabilities".
+   */
+  derivedAssumptions?: DerivedAssumptions
   narrative?: string
   missingInputs: string[]
 }

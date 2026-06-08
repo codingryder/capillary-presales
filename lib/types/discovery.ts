@@ -1,3 +1,5 @@
+import type { RequirementCategory } from './requirements'
+
 /**
  * The typed shape captured during discovery. Every field is optional so the SA can
  * save partial information; calc engine flags which fields are missing for each
@@ -12,6 +14,13 @@ export type DiscoveryInput = {
   program?: ProgramMeta
 
   members?: MembersShape
+
+  /**
+   * Discovery findings — what the prospect's current program is missing or
+   * struggling with. Drives auto-suggestion of which Capillary capabilities
+   * to model in the future state. Also extractable from notes by the LLM.
+   */
+  requirements?: RequirementCategory[]
 
   /**
    * Period over which `pointsIssued` and `pointsRedeemed` are measured.

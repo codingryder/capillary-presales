@@ -1,5 +1,6 @@
 import { metric, type Metric } from '@/lib/types/metric'
 import { DEFAULT_ASSUMPTIONS, type Assumptions } from '@/lib/types/assumptions'
+import type { DerivedAssumptions } from '@/lib/types/capability'
 import type { DiscoveryInput } from '@/lib/types/discovery'
 import type {
   BusinessCase,
@@ -25,6 +26,7 @@ import { isComputed, missingMetric } from './util'
 export function buildBusinessCase(
   discovery: DiscoveryInput,
   assumptions: Assumptions = DEFAULT_ASSUMPTIONS,
+  derivedAssumptions?: DerivedAssumptions,
 ): BusinessCase {
   const { result: current, missing: currentMissing } = computeCurrentState(discovery)
   const { result: future, missing: futureMissing } = computeFutureState(
@@ -211,6 +213,7 @@ export function buildBusinessCase(
     delta,
     headline,
     assumptions,
+    ...(derivedAssumptions ? { derivedAssumptions } : {}),
     missingInputs,
   }
 }
